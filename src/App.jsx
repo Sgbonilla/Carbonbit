@@ -311,7 +311,7 @@ export default function App() {
   };
 
   const rethinkWithGemini = async (query, rawData) => {
-    const apiKey = ""; 
+    const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
     const prompt = `Search: "${query}". API Data: ${JSON.stringify(rawData.map(r => ({ name: r.name, factor: r.factor })))}. TASK: Suggest 3-4 specific user actions. E.g., if "washing", suggest: "Cold Wash", "40C Wash", "60C Wash". Return RAW JSON ARRAY: [{ id, name (in ${lang}), baseUnit, co2 (number), scoreImpact (co2*-10), emoji }].`;
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=\${apiKey}`, {

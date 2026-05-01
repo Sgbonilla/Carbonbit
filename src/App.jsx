@@ -340,8 +340,7 @@ export default function App() {
 
   // 2️⃣ PON AQUÍ TU CLAVE DE GEMINI:
   const rethinkWithGemini = async (query, rawData) => {
-    // const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE
-"; 
+    // const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
     const apiKey = ""; 
     
     if(!apiKey) return null; // Si no hay clave, no falla, solo omite

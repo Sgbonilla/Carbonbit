@@ -3,18 +3,26 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 
-// --- CONFIGURACIÓN DE FIREBASE (Tus credenciales) ---
-const firebaseConfig = {
-  apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
-  authDomain: "carbonbit-994ac.firebaseapp.com",
-  projectId: "carbonbit-994ac",
-  storageBucket: "carbonbit-994ac.firebasestorage.app",
-  messagingSenderId: "1060699721623",
-  appId: "1:1060699721623:web:9b1b2ad57d1c15a0563ed2",
-  measurementId: "G-RGBJJMH7W8"
-};
+// --- LÓGICA DE ENTORNO INTELIGENTE ---
+// Si estamos en Vercel, usa tus claves. Si estamos aquí en el chat, usa las del chat para poder previsualizar.
+const isCanvasEnvironment = typeof __firebase_config !== 'undefined';
 
-const app = initializeApp(Object.keys(firebaseConfig).length ? firebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {}));
+let firebaseConfig;
+if (isCanvasEnvironment) {
+  firebaseConfig = JSON.parse(__firebase_config);
+} else {
+  firebaseConfig = {
+    apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
+    authDomain: "carbonbit-994ac.firebaseapp.com",
+    projectId: "carbonbit-994ac",
+    storageBucket: "carbonbit-994ac.firebasestorage.app",
+    messagingSenderId: "1060699721623",
+    appId: "1:1060699721623:web:9b1b2ad57d1c15a0563ed2",
+    measurementId: "G-RGBJJMH7W8"
+  };
+}
+
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'carbonbit-app';
@@ -261,7 +269,6 @@ export default function App() {
     } catch(e) { return { gen: 0, saved: 0 }; }
   }, [userProfile.history]);
 
-  // Protección 403
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -275,14 +282,18 @@ export default function App() {
       }
     };
     initAuth();
-    return onAuthStateChanged(auth, (u) => {
+    
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (!u) setIsDataLoaded(true);
     });
+    
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!user) return;
+    
     const loadData = async () => {
       try {
         const userRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
@@ -298,12 +309,14 @@ export default function App() {
       }
     };
     loadData();
+    
     try {
       const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-      return onSnapshot(lbRef, (s) => {
+      const unsubLb = onSnapshot(lbRef, (s) => {
         const p = []; s.forEach(d => p.push({ id: d.id, ...d.data() }));
         setLeaderboard(p.sort((a, b) => b.score - a.score).slice(0, 50));
       }, () => {});
+      return () => unsubLb();
     } catch(e) {}
   }, [user]);
 
@@ -338,7 +351,6 @@ export default function App() {
     setUserProfile(updatedProfile); saveToCloud(updatedProfile);
   };
 
-  // --- API DE GEMINI INCRUSTADA ---
   const rethinkWithGemini = async (query, rawData) => {
     const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
     
@@ -363,6 +375,7 @@ export default function App() {
       const cacheRef = doc(db, 'artifacts', appId, 'public', 'data', 'searchCache', 'global');
       const snap = await getDoc(cacheRef);
       if (snap.exists() && snap.data()[term]) { setSearchResults(snap.data()[term]); setIsSearching(false); return; }
+      
       const res = await fetch(`https://beta4.api.climatiq.io/search?query=${encodeURIComponent(searchQuery)}&data_version=^5`, { headers: { 'Authorization': 'Bearer Y3BKEC5RA93CK2P41N5YA4TBCW' } });
       const data = await res.json();
       if (data.results?.length > 0) {
@@ -547,8 +560,8 @@ export default function App() {
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
               <h2 className="text-xl font-black">{t.privateLeagues}</h2>
               <div className="flex gap-2">
-                <button className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">➕ {t.createLeague}</button>
-                <button className="bg-slate-800 text-white font-bold px-6 rounded-2xl">{t.join}</button>
+                <button onClick={() => alert("Función de crear ligas en proceso de validación")} className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">➕ {t.createLeague}</button>
+                <button onClick={() => alert("Código de prueba: MALAGA-2026")} className="bg-slate-800 text-white font-bold px-6 rounded-2xl">{t.join}</button>
               </div>
             </div>
 
@@ -559,7 +572,9 @@ export default function App() {
                   <span className="bg-emerald-500 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">PÚBLICO</span>
                </div>
                <div className="space-y-4 relative z-10">
-                 {leaderboard.map((p, i) => (
+                 {leaderboard.length === 0 ? (
+                    <p className="text-slate-400 italic">Cargando jugadores globales...</p>
+                 ) : leaderboard.map((p, i) => (
                    <div key={p.id} className={`flex justify-between items-center p-6 rounded-[2rem] transition-all ${p.id===user?.uid?'bg-emerald-500 shadow-xl shadow-emerald-500/40 scale-105':'bg-white/5 hover:bg-white/10'}`}>
                      <div className="flex items-center gap-6">
                         <span className="font-mono text-xl font-black opacity-30">{i+1}</span>

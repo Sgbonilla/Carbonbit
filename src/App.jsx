@@ -251,34 +251,53 @@ export default function App() {
     return { gen, saved };
   }, [userProfile.history]);
 
-  useEffect(() => {
+useEffect(() => {
     const initAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
-        else { await signInAnonymously(auth); }
-      } catch (e) {}
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { 
+          await signInWithCustomToken(auth, __initial_auth_token); 
+        } else { 
+          await signInAnonymously(auth); 
+        }
+      } catch (e) {
+        console.error("Error conectando usuario:", e);
+        setIsDataLoaded(true); // Anticaídas: quita la carga si falla
+      }
     };
     initAuth();
-    return onAuthStateChanged(auth, setUser);
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (!u) setIsDataLoaded(true); // Anticaídas: si no hay usuario, muestra la app igual
+    });
   }, []);
 
   useEffect(() => {
     if (!user) return;
     const loadData = async () => {
-      const userRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
-      const snap = await getDoc(userRef);
-      if (snap.exists()) {
-        const d = snap.data();
-        setUserProfile({ joinedLeagues: d.joinedLeagues || [], frequentItems: d.frequentItems || {}, history: d.history || [], score: d.score ?? 500 });
+      try {
+        const userRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'main');
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const d = snap.data();
+          setUserProfile({ joinedLeagues: d.joinedLeagues || [], frequentItems: d.frequentItems || {}, history: d.history || [], score: d.score ?? 500 });
+        }
+      } catch (error) {
+        console.error("Error leyendo base de datos (Posible 403):", error);
+      } finally {
+        setIsDataLoaded(true); // Anticaídas: PASE LO QUE PASE, quita la pantalla de carga
       }
-      setIsDataLoaded(true);
     };
     loadData();
-    const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
-    return onSnapshot(lbRef, (s) => {
-      const p = []; s.forEach(d => p.push({ id: d.id, ...d.data() }));
-      setLeaderboard(p.sort((a, b) => b.score - a.score).slice(0, 50));
-    });
+    
+    try {
+      const lbRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+      return onSnapshot(lbRef, (s) => {
+        const p = []; s.forEach(d => p.push({ id: d.id, ...d.data() }));
+        setLeaderboard(p.sort((a, b) => b.score - a.score).slice(0, 50));
+      }, (err) => {
+        console.error("Error en Leaderboard:", err);
+      });
+    } catch(e) {}
   }, [user]);
 
   const saveToCloud = async (newProfile) => {

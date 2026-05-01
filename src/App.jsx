@@ -5,7 +5,7 @@ import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'fireb
 
 // --- 1. TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
 const firebaseConfig = {
- apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
+  apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
   authDomain: "carbonbit-994ac.firebaseapp.com",
   projectId: "carbonbit-994ac",
   storageBucket: "carbonbit-994ac.firebasestorage.app",
@@ -37,6 +37,9 @@ const T = {
     apiResults: "Sugerencias de la IA para ti:",
     frequent: "🌟 Tus Favoritos",
     quantityLabel: "Multiplicador de uso",
+    privateLeagues: "Ligas Privadas",
+    createLeague: "Crear Liga",
+    join: "Unirse",
     globalLeague: "Liga Global",
     public: "PÚBLICO",
     loading: "Cargando CarbonBit...",
@@ -72,6 +75,9 @@ const T = {
     apiResults: "AI suggestions for you:",
     frequent: "🌟 Your Favorites",
     quantityLabel: "Multiplier",
+    privateLeagues: "Private Leagues",
+    createLeague: "Create League",
+    join: "Join",
     globalLeague: "Global League",
     public: "PUBLIC",
     loading: "Loading CarbonBit...",
@@ -212,7 +218,6 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [chartPeriod, setChartPeriod] = useState('W');
   const [equivIndex, setEquivIndex] = useState(0);
 
   const ACTIVITIES = getActivities(lang);
@@ -253,12 +258,9 @@ export default function App() {
         }
       });
       return { gen, saved };
-    } catch(e) {
-      return { gen: 0, saved: 0 };
-    }
+    } catch(e) { return { gen: 0, saved: 0 }; }
   }, [userProfile.history]);
 
-  // --- PROTECCIÓN 403 INTEGRADA INVISIBLEMENTE ---
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -535,23 +537,34 @@ export default function App() {
         )}
 
         {currentTab === 'community' && (
-          <div className="bg-slate-900 text-white p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-10 opacity-10 text-9xl">🏆</div>
-             <div className="flex justify-between items-center relative z-10 border-b border-white/10 pb-6">
-                <h2 className="text-3xl font-black italic tracking-tighter">{t.globalLeague}</h2>
-                <span className="bg-emerald-500 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">PÚBLICO</span>
-             </div>
-             <div className="space-y-4 relative z-10">
-               {leaderboard.map((p, i) => (
-                 <div key={p.id} className={`flex justify-between items-center p-6 rounded-[2rem] transition-all ${p.id===user?.uid?'bg-emerald-500 shadow-xl shadow-emerald-500/40 scale-105':'bg-white/5 hover:bg-white/10'}`}>
-                   <div className="flex items-center gap-6">
-                      <span className="font-mono text-xl font-black opacity-30">{i+1}</span>
-                      <span className="font-black text-lg tracking-tight">{p.name}</span>
+          <div className="space-y-6 animate-fade-in">
+            {/* LIGAS PRIVADAS RESTAURADAS */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
+              <h2 className="text-xl font-black">{t.privateLeagues}</h2>
+              <div className="flex gap-2">
+                <button onClick={() => alert("Función de crear ligas en v1.5")} className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">➕ {t.createLeague}</button>
+                <button onClick={() => alert("Código de prueba: MALAGA-2026")} className="bg-slate-800 text-white font-bold px-6 rounded-2xl">{t.join}</button>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 text-white p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-10 opacity-10 text-9xl">🏆</div>
+               <div className="flex justify-between items-center relative z-10 border-b border-white/10 pb-6">
+                  <h2 className="text-3xl font-black italic tracking-tighter">{t.globalLeague}</h2>
+                  <span className="bg-emerald-500 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">PÚBLICO</span>
+               </div>
+               <div className="space-y-4 relative z-10">
+                 {leaderboard.map((p, i) => (
+                   <div key={p.id} className={`flex justify-between items-center p-6 rounded-[2rem] transition-all ${p.id===user?.uid?'bg-emerald-500 shadow-xl shadow-emerald-500/40 scale-105':'bg-white/5 hover:bg-white/10'}`}>
+                     <div className="flex items-center gap-6">
+                        <span className="font-mono text-xl font-black opacity-30">{i+1}</span>
+                        <span className="font-black text-lg tracking-tight">{p.name}</span>
+                     </div>
+                     <span className="font-black font-mono text-2xl text-emerald-400">{p.score}</span>
                    </div>
-                   <span className="font-black font-mono text-2xl text-emerald-400">{p.score}</span>
-                 </div>
-               ))}
-             </div>
+                 ))}
+               </div>
+            </div>
           </div>
         )}
       </div>

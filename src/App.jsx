@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 
+// --- CONFIGURACIÓN DE FIREBASE (Tus credenciales reales) ---
 const firebaseConfig = {
   apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
   authDomain: "carbonbit-994ac.firebaseapp.com",
@@ -13,10 +14,10 @@ const firebaseConfig = {
   measurementId: "G-RGBJJMH7W8"
 };
 
-const app = initializeApp(Object.keys(firebaseConfig).length ? firebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {}));
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'carbonbit-app';
+const appId = 'carbonbit-app';
 
 const T = {
   es: {
@@ -216,6 +217,9 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  
+  // ¡AQUÍ ESTÁ LA VARIABLE DE LA GRÁFICA RESTAURADA!
+  const [chartPeriod, setChartPeriod] = useState('W'); 
   const [equivIndex, setEquivIndex] = useState(0);
 
   const ACTIVITIES = getActivities(lang);
@@ -336,6 +340,7 @@ export default function App() {
   };
 
   const rethinkWithGemini = async (query, rawData) => {
+    // Tu API de Gemini real inyectada:
     const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
     
     if(!apiKey) return null;
@@ -374,17 +379,18 @@ export default function App() {
     } catch (e) {} finally { setIsSearching(false); }
   };
 
+  // CÁLCULO DE GRÁFICA RESTAURADO PARA 7 O 30 DÍAS
   const chartData = useMemo(() => {
-    const days = 7;
+    const days = chartPeriod === 'W' ? 7 : 30;
     const data = Array(days).fill(0);
     const now = new Date();
     (userProfile.history || []).forEach(h => {
       const d = new Date(h.timestamp);
       const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24));
-      if (diff < days) data[days - 1 - diff] += h.co2;
+      if (diff < days && diff >= 0) data[days - 1 - diff] += h.co2;
     });
     return data;
-  }, [userProfile.history]);
+  }, [userProfile.history, chartPeriod]);
 
   if (!isDataLoaded) return <div className="min-h-screen flex items-center justify-center font-mono font-bold text-slate-400 bg-slate-50">{t.loading}</div>;
   const currentTips = ACTION_TIPS[lang] || ACTION_TIPS.es;
@@ -487,7 +493,15 @@ export default function App() {
         {currentTab === 'history' && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-              <h2 className="text-xl font-black mb-8 flex items-center gap-2">📊 {t.tabHistory}</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-black flex items-center gap-2">📊 {t.tabHistory}</h2>
+                {/* BOTONES DE 7D / 30D RESTAURADOS */}
+                <div className="flex bg-slate-100 p-1 rounded-xl">
+                  <button onClick={() => setChartPeriod('W')} className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartPeriod === 'W' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400'}`}>7D</button>
+                  <button onClick={() => setChartPeriod('M')} className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartPeriod === 'M' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400'}`}>30D</button>
+                </div>
+              </div>
+              
               <div className="h-44 w-full flex items-end justify-between px-2 gap-2">
                 {chartData.map((val, i) => {
                   const max = Math.max(...chartData, 1);
@@ -503,6 +517,7 @@ export default function App() {
                 })}
               </div>
             </div>
+            
             <div className="space-y-4">
               {userProfile.history.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-[2rem] border border-dashed border-slate-300">
@@ -534,7 +549,6 @@ export default function App() {
 
         {currentTab === 'community' && (
           <div className="space-y-6 animate-fade-in">
-            {/* LIGAS PRIVADAS */}
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
               <h2 className="text-xl font-black">{t.privateLeagues}</h2>
               <div className="flex gap-2">
@@ -543,7 +557,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* LIGA GLOBAL */}
             <div className="bg-slate-900 text-white p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
                <div className="absolute top-0 right-0 p-10 opacity-10 text-9xl">🏆</div>
                <div className="flex justify-between items-center relative z-10 border-b border-white/10 pb-6">

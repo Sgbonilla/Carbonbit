@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- VERSIÓN FRONT-END PURA (SIN SERVIDORES) ---
-// Santi: Aquí no hay Firebase ni Gemini que rompan la carga. 
-// La interfaz cargará de inmediato con sus colores y gráficas originales.
-
 const T = {
   es: {
     appStatus: "Modo Local Activo 📱",
@@ -16,9 +12,9 @@ const T = {
     searchTitle: "🔍 Buscador Inteligente ✨",
     searchPlaceholder: "Ej. laptop, jeans, beer, flight...",
     searchBtn: "Buscar",
-    searching: "IA analizando...",
+    searching: "Analizando...",
     apiTip: "💡 Tip: Escribe en inglés (ej. 'meat') para resultados exactos.",
-    apiResults: "Sugerencias de la IA para ti:",
+    apiResults: "Sugerencias para ti:",
     quantityLabel: "Multiplicador de uso",
     privateLeagues: "Ligas Privadas",
     createLeague: "Crear Liga",
@@ -27,7 +23,7 @@ const T = {
     public: "PÚBLICO",
     you: "(Tú)",
     aboutTitle: "Sobre CarbonBit",
-    aboutText: "• CONCIENCIA: Entiende el impacto real de tus decisiones diarias sobre el medio ambiente.\n\n• DATOS REALES: Usamos cálculos científicos de Análisis de Ciclo de Vida (LCA).\n\n• CLIMA SCORE: Es tu nivel de experiencia acumulado.\n\n• COMUNIDAD: Reta a tus amigos y compite.",
+    aboutText: "• CONCIENCIA: Entiende el impacto real de tus decisiones diarias sobre el medio ambiente.\n\n• DATOS REALES: Usamos cálculos científicos de Análisis de Ciclo de Vida.\n\n• CLIMA SCORE: Es tu nivel de experiencia acumulado.\n\n• COMUNIDAD: Reta a tus amigos y compite.",
     close: "¡Vamos allá!",
     scoreLabel: "CLIMA SCORE TOTAL",
     transport: "Transporte",
@@ -155,7 +151,7 @@ export default function App() {
   const [chartPeriod, setChartPeriod] = useState('W');
   const [equivIndex, setEquivIndex] = useState(0);
 
-  // ESTADO LOCAL (No depende de servidores)
+  // ESTADO LOCAL
   const [userProfile, setUserProfile] = useState({ 
     history: [], 
     score: 500 
@@ -220,7 +216,6 @@ export default function App() {
     if (!term) return;
     setIsSearching(true);
     
-    // Búsqueda simulada sin IA para que no haya errores
     setTimeout(() => {
       setSearchResults([{ id: `mock_${Date.now()}`, name: `Resultado: ${term}`, baseUnit: "1 ud", co2: 2.5, scoreImpact: -25, icon: '🌍' }]);
       setIsSearching(false);
@@ -239,7 +234,6 @@ export default function App() {
     return data;
   }, [userProfile.history, chartPeriod]);
 
-  // Jugadores de prueba para que la comunidad no se vea vacía
   const mockLeaderboard = [
     { id: '1', name: 'Hugo_Berlin', score: 850 },
     { id: '2', name: 'EcoSanti', score: userProfile.score },

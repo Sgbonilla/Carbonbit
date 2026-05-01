@@ -3,17 +3,9 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 
-/**
- * CARBONBIT v1.4.7 - "THE MALAGA DEPLOYMENT" (VERSIÓN REAL)
- * - UI: Fuentes de los tips incrementadas y en negrita para mejor lectura.
- * - DATA: Categoría "Compras" añadida + expansión de todas las categorías.
- * - AI: Prompt de Gemini optimizado para razonar sobre unidades de medida.
- * - UX: Menús de navegación y protección 403 integrados.
- */
-
-// 1. PON TU CONFIGURACIÓN DE FIREBASE AQUÍ:
+// --- 1. TU CONFIGURACIÓN DE FIREBASE AQUÍ ---
 const firebaseConfig = {
-  apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
+ apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
   authDomain: "carbonbit-994ac.firebaseapp.com",
   projectId: "carbonbit-994ac",
   storageBucket: "carbonbit-994ac.firebasestorage.app",
@@ -26,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(Object.keys(firebaseConfig).length ? firebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {}));
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'carbonbit-app';
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 const T = {
   es: {
@@ -111,7 +103,6 @@ const getActivities = (lang) => {
       { id: 'train_50k', name: isEs ? 'Tren (50km)' : 'Train (50km)', co2: 1.2, savedCo2: 5.8, scoreImpact: +15, icon: '🚆', baseUnit: '50 km' },
       { id: 'flight_short', name: isEs ? 'Vuelo corto (<600km)' : 'Short Flight', co2: 120, scoreImpact: -120, icon: '✈️', baseUnit: '1 vuelo' },
       { id: 'flight_long', name: isEs ? 'Vuelo largo (>2000km)' : 'Long Flight', co2: 650, scoreImpact: -600, icon: '🌎', baseUnit: '1 vuelo' },
-      { id: 'scooter_5k', name: isEs ? 'Patinete Eléctrico' : 'E-Scooter', co2: 0.05, savedCo2: 0.8, scoreImpact: +5, icon: '🛴', baseUnit: '5 km' },
     ],
     food: [
       { id: 'beef_steak', name: isEs ? 'Ternera (250g)' : 'Beef (250g)', co2: 6.75, scoreImpact: -68, icon: '🥩', baseUnit: '250g' },
@@ -221,6 +212,7 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [chartPeriod, setChartPeriod] = useState('W');
   const [equivIndex, setEquivIndex] = useState(0);
 
   const ACTIVITIES = getActivities(lang);
@@ -261,9 +253,12 @@ export default function App() {
         }
       });
       return { gen, saved };
-    } catch(e) { return { gen: 0, saved: 0 }; }
+    } catch(e) {
+      return { gen: 0, saved: 0 };
+    }
   }, [userProfile.history]);
 
+  // --- PROTECCIÓN 403 INTEGRADA INVISIBLEMENTE ---
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -273,7 +268,6 @@ export default function App() {
           await signInAnonymously(auth); 
         }
       } catch (e) {
-        console.error("Auth fallback:", e);
         setIsDataLoaded(true);
       }
     };
@@ -295,7 +289,7 @@ export default function App() {
           setUserProfile({ joinedLeagues: d.joinedLeagues || [], frequentItems: d.frequentItems || {}, history: d.history || [], score: d.score ?? 500 });
         }
       } catch (error) {
-        console.error("Firebase Read error:", error);
+        console.error(error);
       } finally {
         setIsDataLoaded(true);
       }
@@ -306,7 +300,7 @@ export default function App() {
       return onSnapshot(lbRef, (s) => {
         const p = []; s.forEach(d => p.push({ id: d.id, ...d.data() }));
         setLeaderboard(p.sort((a, b) => b.score - a.score).slice(0, 50));
-      }, (err) => { console.warn("Leaderboard error:", err); });
+      }, () => {});
     } catch(e) {}
   }, [user]);
 
@@ -317,7 +311,7 @@ export default function App() {
       await setDoc(userRef, newProfile, { merge: true });
       const lbRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', user.uid);
       await setDoc(lbRef, { name: `EcoSanti_${user.uid.slice(0,4)}`, score: newProfile.score }, { merge: true });
-    } catch(e) { console.error("Save error:", e); }
+    } catch(e) {}
   };
 
   const handleAdd = async (act) => {
@@ -341,7 +335,7 @@ export default function App() {
     setUserProfile(updatedProfile); saveToCloud(updatedProfile);
   };
 
-  // 2. PON TU CLAVE DE GEMINI AQUÍ:
+  // --- 2. TU CLAVE DE GEMINI AQUÍ ---
   const rethinkWithGemini = async (query, rawData) => {
     // const apiKey = "TU_CLAVE_AQUI"; 
     const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 

@@ -4,11 +4,14 @@ import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged }
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'firebase/firestore';
 
 /**
- * CARBONBIT v1.5.0 - FINAL CLOUD RELEASE
- * Incluye protección contra 403, Menús de Navegación, IA y Caché
+ * CARBONBIT v1.4.7 - "THE MALAGA DEPLOYMENT" (VERSIÓN REAL)
+ * - UI: Fuentes de los tips incrementadas y en negrita para mejor lectura.
+ * - DATA: Categoría "Compras" añadida + expansión de todas las categorías.
+ * - AI: Prompt de Gemini optimizado para razonar sobre unidades de medida.
+ * - UX: Menús de navegación y protección 403 integrados.
  */
 
-// 1️⃣ PON AQUÍ TU CONFIGURACIÓN DE FIREBASE:
+// 1. PON TU CONFIGURACIÓN DE FIREBASE AQUÍ:
 const firebaseConfig = {
   apiKey: "AIzaSyAmrKcmKR1aFdv9b4Ud2wam7TLFTL6d6zU",
   authDomain: "carbonbit-994ac.firebaseapp.com",
@@ -27,7 +30,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'carbonbit-app';
 
 const T = {
   es: {
-    appStatus: "Nube Activa ☁️",
+    appStatus: "Sincronización en la Nube Activa ☁️",
     tabTracker: "Mi Impacto",
     tabHistory: "Mi Historia",
     tabCommunity: "Comunidad",
@@ -47,7 +50,7 @@ const T = {
     loading: "Cargando CarbonBit...",
     you: "(Tú)",
     aboutTitle: "Sobre CarbonBit",
-    aboutText: "• CONCIENCIA: Entiende el impacto real de tus decisiones diarias sobre el medio ambiente.\n\n• DATOS REALES: Usamos cálculos científicos (LCA) procesados por IA Gemini.\n\n• CLIMA SCORE: Es tu nivel de experiencia acumulado. Refleja tu compromiso.\n\n• COMUNIDAD: Reta a tus amigos por tener el estilo más sostenible.",
+    aboutText: "• CONCIENCIA: Entiende el impacto real de tus decisiones diarias sobre el medio ambiente.\n\n• DATOS REALES: Usamos cálculos científicos de Análisis de Ciclo de Vida (LCA) procesados por IA Gemini.\n\n• CLIMA SCORE: Es tu nivel de experiencia acumulado. Refleja tu compromiso a largo plazo.\n\n• COMUNIDAD: Reta a tus amigos y compite por tener el estilo de vida más sostenible.",
     close: "¡Vamos allá!",
     scoreLabel: "CLIMA SCORE TOTAL",
     transport: "Transporte",
@@ -108,6 +111,7 @@ const getActivities = (lang) => {
       { id: 'train_50k', name: isEs ? 'Tren (50km)' : 'Train (50km)', co2: 1.2, savedCo2: 5.8, scoreImpact: +15, icon: '🚆', baseUnit: '50 km' },
       { id: 'flight_short', name: isEs ? 'Vuelo corto (<600km)' : 'Short Flight', co2: 120, scoreImpact: -120, icon: '✈️', baseUnit: '1 vuelo' },
       { id: 'flight_long', name: isEs ? 'Vuelo largo (>2000km)' : 'Long Flight', co2: 650, scoreImpact: -600, icon: '🌎', baseUnit: '1 vuelo' },
+      { id: 'scooter_5k', name: isEs ? 'Patinete Eléctrico' : 'E-Scooter', co2: 0.05, savedCo2: 0.8, scoreImpact: +5, icon: '🛴', baseUnit: '5 km' },
     ],
     food: [
       { id: 'beef_steak', name: isEs ? 'Ternera (250g)' : 'Beef (250g)', co2: 6.75, scoreImpact: -68, icon: '🥩', baseUnit: '250g' },
@@ -209,7 +213,7 @@ export default function App() {
   const t = T[lang] || T.es;
   const [user, setUser] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [currentTab, setCurrentTab] = useState('tracker'); // TAB ACTUAL
+  const [currentTab, setCurrentTab] = useState('tracker');
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [userProfile, setUserProfile] = useState({ joinedLeagues: [], frequentItems: {}, history: [], score: 500 });
   const [quantity, setQuantity] = useState(1);
@@ -260,7 +264,6 @@ export default function App() {
     } catch(e) { return { gen: 0, saved: 0 }; }
   }, [userProfile.history]);
 
-  // PROTECCIÓN CONTRA 403 FIREBASE
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -294,7 +297,7 @@ export default function App() {
       } catch (error) {
         console.error("Firebase Read error:", error);
       } finally {
-        setIsDataLoaded(true); // ¡PANTALLA DE CARGA FUERA PASE LO QUE PASE!
+        setIsDataLoaded(true);
       }
     };
     loadData();
@@ -338,12 +341,12 @@ export default function App() {
     setUserProfile(updatedProfile); saveToCloud(updatedProfile);
   };
 
-  // 2️⃣ PON AQUÍ TU CLAVE DE GEMINI:
+  // 2. PON TU CLAVE DE GEMINI AQUÍ:
   const rethinkWithGemini = async (query, rawData) => {
-    // const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
-    const apiKey = ""; 
+    // const apiKey = "TU_CLAVE_AQUI"; 
+    const apiKey = "AIzaSyDJJpBFL18Xxn3461D-ysmP8Gx7K_a-fvE"; 
     
-    if(!apiKey) return null; // Si no hay clave, no falla, solo omite
+    if(!apiKey) return null;
     const prompt = `Search: "${query}". API Data: ${JSON.stringify(rawData.map(r => ({ name: r.name, factor: r.factor })))}. TASK: Suggest 3-4 specific user actions. E.g., if "washing", suggest: "Cold Wash", "40C Wash", "60C Wash". Return RAW JSON ARRAY: [{ id, name (in ${lang}), baseUnit, co2 (number), scoreImpact (co2*-10), emoji }].`;
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -364,7 +367,6 @@ export default function App() {
       const cacheRef = doc(db, 'artifacts', appId, 'public', 'data', 'searchCache', 'global');
       const snap = await getDoc(cacheRef);
       if (snap.exists() && snap.data()[term]) { setSearchResults(snap.data()[term]); setIsSearching(false); return; }
-      
       const res = await fetch(`https://beta4.api.climatiq.io/search?query=${encodeURIComponent(searchQuery)}&data_version=^5`, { headers: { 'Authorization': 'Bearer Y3BKEC5RA93CK2P41N5YA4TBCW' } });
       const data = await res.json();
       if (data.results?.length > 0) {
@@ -374,7 +376,6 @@ export default function App() {
           await setDoc(cacheRef, { [term]: final }, { merge: true });
           setSearchResults(final);
         } else {
-          // Fallback si no hay Gemini configurado
            setSearchResults(data.results.slice(0, 3).map(r => ({ id: `api_${r.id}`, name: r.name.split(',')[0], baseUnit: "1 ud", co2: r.factor || 1.5, scoreImpact: -Math.round((r.factor || 1.5) * 10), icon: '🌍' })));
         }
       }
@@ -417,7 +418,6 @@ export default function App() {
           <RetroPixelScreen score={userProfile.score} lang={lang} />
         </header>
 
-        {/* PESTAÑA 1: TRACKER */}
         {currentTab === 'tracker' && (
           <div className="space-y-6 animate-fade-in">
             <div className="grid grid-cols-2 gap-4">
@@ -443,9 +443,9 @@ export default function App() {
               <div className="flex items-center justify-between bg-slate-50 p-6 rounded-[2rem]">
                 <span className="text-xs font-black opacity-40 uppercase tracking-widest">{t.quantityLabel}</span>
                 <div className="flex items-center gap-7">
-                  <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-2xl hover:bg-slate-100">-</button>
+                  <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-2xl hover:bg-slate-100 transition-all">-</button>
                   <span className="text-4xl font-black font-mono text-slate-800">{quantity}</span>
-                  <button onClick={() => setQuantity(q => q+1)} className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-2xl hover:bg-slate-100">+</button>
+                  <button onClick={() => setQuantity(q => q+1)} className="w-14 h-14 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-2xl hover:bg-slate-100 transition-all">+</button>
                 </div>
               </div>
 
@@ -469,9 +469,9 @@ export default function App() {
                   <p className="text-[10px] text-slate-400 mt-1 font-medium italic">{t.apiTip}</p>
                 </div>
                 <form onSubmit={searchDB} className="relative flex gap-3">
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t.searchPlaceholder} className="w-full pl-12 pr-4 py-4 bg-slate-100 rounded-3xl outline-none focus:ring-2 focus:ring-emerald-500 text-base font-medium" />
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t.searchPlaceholder} className="w-full pl-12 pr-4 py-4 bg-slate-100 rounded-3xl outline-none focus:ring-2 focus:ring-emerald-500 text-base font-medium transition-all" />
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 opacity-30 text-xl">🔍</span>
-                  <button type="submit" disabled={isSearching} className="px-10 py-4 bg-slate-900 text-white rounded-3xl font-black text-sm disabled:opacity-50 shadow-lg active:scale-95">{isSearching ? "..." : t.searchBtn}</button>
+                  <button type="submit" disabled={isSearching} className="px-10 py-4 bg-slate-900 text-white rounded-3xl font-black text-sm disabled:opacity-50 min-w-[120px] shadow-lg active:scale-95">{isSearching ? "..." : t.searchBtn}</button>
                 </form>
                 {searchResults.length > 0 && (
                   <div className="p-5 bg-indigo-950 rounded-[2rem] space-y-3 shadow-2xl animate-fade-in border border-indigo-400/20">
@@ -479,7 +479,7 @@ export default function App() {
                     {searchResults.map(act => (
                       <button key={act.id} onClick={() => {handleAdd(act); setSearchResults([]); setSearchQuery('');}} className="w-full flex justify-between items-center p-5 bg-white/5 hover:bg-white/10 rounded-2xl text-white text-sm transition-all border border-white/5 group">
                         <span className="flex flex-col items-start text-left">
-                           <span className="flex items-center gap-3 font-bold text-emerald-300 text-lg"><span>{act.icon}</span>{act.name}</span>
+                           <span className="flex items-center gap-3 font-bold text-emerald-300 text-lg group-hover:scale-105 transition-transform"><span>{act.icon}</span>{act.name}</span>
                            <span className="text-[11px] opacity-40 font-mono italic mt-1">{act.baseUnit}</span>
                         </span>
                         <span className="font-mono text-base font-black bg-white/10 px-3 py-1.5 rounded-xl text-emerald-400">{(act.co2 * quantity).toFixed(2)}kg</span>
@@ -492,7 +492,6 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA 2: HISTORIA */}
         {currentTab === 'history' && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
@@ -519,9 +518,9 @@ export default function App() {
                 </div>
               ) : (
                 userProfile.history.map(h => (
-                  <div key={h.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center hover:border-emerald-200 transition-all">
+                  <div key={h.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:border-emerald-200 transition-all">
                     <div className="flex items-center gap-5">
-                      <div className="text-4xl p-4 bg-slate-50 rounded-2xl">{h.icon}</div>
+                      <div className="text-4xl p-4 bg-slate-50 rounded-2xl group-hover:bg-emerald-50 transition-colors">{h.icon}</div>
                       <div>
                         <p className="font-black text-slate-800 text-lg">{h.name}</p>
                         <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{new Date(h.timestamp).toLocaleDateString()} · {h.recordedQty} uds.</p>
@@ -532,7 +531,7 @@ export default function App() {
                          <p className={`font-black text-lg ${h.scoreImpact > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{h.scoreImpact > 0 ? '+' : ''}{h.scoreImpact} pts</p>
                          <p className="text-sm font-mono font-black opacity-30 tracking-tighter">{h.co2.toFixed(2)}kg</p>
                        </div>
-                       <button onClick={() => handleDelete(h.id)} className="w-12 h-12 flex items-center justify-center bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 active:scale-90 font-black text-xl">✕</button>
+                       <button onClick={() => handleDelete(h.id)} className="w-12 h-12 flex items-center justify-center bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 transition-all active:scale-90 font-black text-xl">✕</button>
                     </div>
                   </div>
                 ))
@@ -541,13 +540,12 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA 3: COMUNIDAD */}
         {currentTab === 'community' && (
-          <div className="bg-slate-900 text-white p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden animate-fade-in">
+          <div className="bg-slate-900 text-white p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
              <div className="absolute top-0 right-0 p-10 opacity-10 text-9xl">🏆</div>
              <div className="flex justify-between items-center relative z-10 border-b border-white/10 pb-6">
                 <h2 className="text-3xl font-black italic tracking-tighter">{t.globalLeague}</h2>
-                <span className="bg-emerald-500 text-[11px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">PÚBLICO</span>
+                <span className="bg-emerald-500 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">PÚBLICO</span>
              </div>
              <div className="space-y-4 relative z-10">
                {leaderboard.map((p, i) => (
@@ -564,15 +562,13 @@ export default function App() {
         )}
       </div>
 
-      {/* MENÚ DE NAVEGACIÓN INFERIOR TOTALMENTE VISIBLE */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[94%] max-w-md bg-white/95 backdrop-blur-xl border border-slate-200 p-2.5 flex justify-around shadow-[0_25px_60px_rgba(0,0,0,0.15)] rounded-[2.5rem] z-50">
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md bg-white/95 backdrop-blur-xl border border-slate-200 p-3 flex justify-around shadow-[0_25px_60px_rgba(0,0,0,0.2)] rounded-[2.5rem] z-50">
         {[{ id: 'tracker', label: t.tabTracker, icon: '📍' }, { id: 'history', label: t.tabHistory, icon: '📈' }, { id: 'community', label: t.tabCommunity, icon: '🏆' }].map(tab => (
           <button key={tab.id} onClick={() => setCurrentTab(tab.id)} className={`flex flex-col items-center flex-1 p-4 rounded-[2rem] transition-all duration-300 ${currentTab===tab.id?'bg-emerald-50 text-emerald-600 scale-95 font-black shadow-inner':'opacity-30 hover:opacity-100'}`}>
-            <span className="text-3xl mb-1.5">{tab.icon}</span><span className="text-[9px] uppercase font-black tracking-[0.1em]">{tab.label}</span>
+            <span className="text-3xl mb-1.5">{tab.icon}</span><span className="text-[10px] uppercase font-black tracking-widest">{tab.label}</span>
           </button>
         ))}
       </nav>
-
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }

@@ -582,6 +582,3 @@ export default function App() {
     </div>
   );
 }
-```eof
-
-He modificado el espaciado al final de la página (`pb-40`) y subido la barra un poco (`bottom-6`) para garantizar que la barra de navegación que contiene las pestañas del **Tracker**, el **Historial** y la **Comunidad** sea lo último que vea el usuario y no se solape. También he incorporado el bloque `try/catch` para que los datos siempre carguen, aunque haya un error en la nube. ¡Copia el bloque entero y avísame cuando recargues la página!
